@@ -1,0 +1,246 @@
+// ============================================================
+// TeamSync — Prisma Schema
+// ============================================================
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+// ============================================================
+// Enums
+// ============================================================
+
+enum UserRole {
+  STUDENT
+  TEACHER
+
+  @@map("user_role")
+}
+
+enum ProjectStatus {
+  RECRUITING
+  ACTIVE
+  CLOSED
+
+  @@map("project_status")
+}
+
+enum MemberRole {
+  LEADER
+  MEMBER
+
+  @@map("member_role")
+}
+
+enum MemberStatus {
+  PENDING
+  APPROVED
+  REJECTED
+
+  @@map("member_status")
+}
+
+enum MilestoneStatus {
+  ACTIVE
+  COMPLETED
+
+  @@map("milestone_status")
+}
+
+enum TaskStatus {
+  TODO
+  DOING
+  REVIEW
+  DONE
+
+  @@map("task_status")
+}
+
+// ============================================================
+// Models
+// ============================================================
+
+/// 用户表
+model User {
+  user_id       BigInt    @id @default(autoincrement())
+  username      String    @unique @db.VarChar(32)
+  email         String    @unique @db.VarChar(100)
+  password_hash String    @db.VarChar(60)
+  nickname      String    @db.VarChar(50)
+  role          UserRole  @default(STUDENT)
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  is_deleted    Boolean   @default(false)
+
+  // 关系
+  led_projects        Project[]         @relation("ProjectLeader")
+  project_memberships ProjectMember[]
+  created_tasks       Task[]            @relation("TaskCreator")
+  assigned_tasks      Task[]            @relation("TaskAssignee")
+  given_reviews       PeerReview[]      @relation("Reviewer")
+  received_reviews    PeerReview[]      @relation("Target")
+  user_skill_tags     UserSkillTag[]
+
+  @@map("user")
+}
+
+/// 项目表
+model Project {
+  project_id  BigInt        @id @default(autoincrement())
+  leader_id   BigInt
+  title       String        @db.VarChar(100)
+  description String?       @db.Text
+  max_members Int           @default(5) @db.TinyInt
+  status      ProjectStatus @default(RECRUITING)
+  deadline    DateTime      @db.Date
+  created_at  DateTime      @default(now())
+  updated_at  DateTime      @updatedAt
+  is_deleted  Boolean       @default(false)
+
+  // 关系
+  leader              User                @relation("ProjectLeader", fields: [leader_id], references: [user_id])
+  members             ProjectMember[]
+  milestones          Milestone[]
+  tasks               Task[]
+  peer_reviews        PeerReview[]
+  project_required_tags ProjectRequiredTag[]
+
+  @@map("project")
+}
+
+/// 项目成员表（联合主键）
+model ProjectMember {
+  project_id   BigInt
+  user_id      BigInt
+  role         MemberRole   @default(MEMBER)
+  status       MemberStatus @default(PENDING)
+  apply_reason String?      @db.Text
+  joined_at    DateTime     @default(now())
+  updated_at   DateTime     @updatedAt
+  is_deleted   Boolean      @default(false)
+
+  // 关系
+  project Project @relation(fields: [project_id], references: [project_id])
+  user    User    @relation(fields: [user_id], references: [user_id])
+
+  @@id([project_id, user_id])
+  @@map("project_member")
+}
+
+/// 里程碑表
+model Milestone {
+  milestone_id BigInt          @id @default(autoincrement())
+  project_id   BigInt
+  title        String          @db.VarChar(100)
+  description  String?         @db.Text
+  due_date     DateTime        @db.Date
+  status       MilestoneStatus @default(ACTIVE)
+  created_at   DateTime        @default(now())
+  updated_at   DateTime        @updatedAt
+  is_deleted   Boolean         @default(false)
+
+  // 关系
+  project Project @relation(fields: [project_id], references: [project_id])
+  tasks   Task[]
+
+  @@map("milestone")
+}
+
+/// 任务表
+model Task {
+  task_id      BigInt     @id @default(autoincrement())
+  project_id   BigInt
+  milestone_id BigInt?
+  creator_id   BigInt
+  assignee_id  BigInt?
+  title        String     @db.VarChar(200)
+  description  String?    @db.Text
+  weight       Int        @default(1) @db.TinyInt
+  status       TaskStatus @default(TODO)
+  due_date     DateTime?  @db.Date
+  created_at   DateTime   @default(now())
+  updated_at   DateTime   @updatedAt
+  is_deleted   Boolean    @default(false)
+
+  // 关系
+  project   Project   @relation(fields: [project_id], references: [project_id])
+  milestone Milestone? @relation(fields: [milestone_id], references: [milestone_id])
+  creator   User      @relation("TaskCreator", fields: [creator_id], references: [user_id])
+  assignee  User?     @relation("TaskAssignee", fields: [assignee_id], references: [user_id])
+
+  @@map("task")
+}
+
+/// 互评表
+model PeerReview {
+  review_id   BigInt   @id @default(autoincrement())
+  project_id  BigInt
+  reviewer_id BigInt
+  target_id   BigInt
+  score       Int      @db.TinyInt
+  content     String?  @db.Text
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  is_deleted  Boolean  @default(false)
+
+  // 关系
+  project  Project @relation(fields: [project_id], references: [project_id])
+  reviewer User    @relation("Reviewer", fields: [reviewer_id], references: [user_id])
+  target   User    @relation("Target", fields: [target_id], references: [user_id])
+
+  @@unique([project_id, reviewer_id, target_id])
+  @@map("peer_review")
+}
+
+/// 标签表
+model Tag {
+  tag_id     BigInt   @id @default(autoincrement())
+  name       String   @db.VarChar(30)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  is_deleted Boolean  @default(false)
+
+  // 关系
+  user_skill_tags       UserSkillTag[]
+  project_required_tags ProjectRequiredTag[]
+
+  @@map("tag")
+}
+
+/// 用户技能标签关联表（联合主键）
+model UserSkillTag {
+  user_id    BigInt
+  tag_id     BigInt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  is_deleted Boolean  @default(false)
+
+  // 关系
+  user User @relation(fields: [user_id], references: [user_id])
+  tag  Tag  @relation(fields: [tag_id], references: [tag_id])
+
+  @@id([user_id, tag_id])
+  @@map("user_skill_tag")
+}
+
+/// 项目需求标签关联表（联合主键）
+model ProjectRequiredTag {
+  project_id BigInt
+  tag_id     BigInt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  is_deleted Boolean  @default(false)
+
+  // 关系
+  project Project @relation(fields: [project_id], references: [project_id])
+  tag     Tag     @relation(fields: [tag_id], references: [tag_id])
+
+  @@id([project_id, tag_id])
+  @@map("project_required_tag")
+}
