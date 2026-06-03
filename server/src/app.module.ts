@@ -9,6 +9,9 @@ import { ProjectModule } from './project/project.module';
 import { TaskModule } from './task/task.module';
 import { MilestoneModule } from './milestone/milestone.module';
 import { TagModule } from './tag/tag.module';
+import { ReviewModule } from './review/review.module';
+import { ContributionModule } from './contribution/contribution.module';
+import { ReportModule } from './report/report.module';
 
 @Module({
   imports: [
@@ -20,6 +23,9 @@ import { TagModule } from './tag/tag.module';
     TaskModule,
     MilestoneModule,
     TagModule,
+    ReviewModule,
+    ContributionModule,
+    ReportModule,
   ],
   controllers: [AppController],
   providers: [AppService],

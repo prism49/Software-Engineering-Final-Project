@@ -48,6 +48,7 @@ export class AuthService {
       email: dto.email,
       passwordHash,
       nickname: dto.nickname,
+      role: dto.role ?? 'STUDENT',
     });
 
     return serializeUser(user);
@@ -69,7 +70,7 @@ export class AuthService {
     }
 
     // JWT payload 使用 Number（BigInt 不可序列化）
-    const payload = { sub: Number(user.user_id), username: user.username };
+    const payload = { sub: Number(user.user_id), username: user.username, role: user.role };
     const accessToken = this.jwtService.sign(payload);
 
     return {

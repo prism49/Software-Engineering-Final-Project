@@ -120,6 +120,30 @@ RECRUITING   ←→  ACTIVE
 - 满员审批通过时自动 RECRUITING → ACTIVE
 - CLOSED 为终态，不可回退
 
+## 业务规则
+
+| 规则 | 说明 |
+|---|---|
+| 仅队长可修改项目 | `PATCH /api/projects/:id`（标题/描述/状态/标签/截止日） |
+| 仅队长可审批成员 | `PATCH /api/projects/:id/members/:userId` |
+| 仅队长可关闭项目 | 关闭时所有任务必须为 DONE |
+| 关闭后才可互评 | 项目 status=CLOSED 才可 POST reviews |
+| 不能给自己评分 | POST reviews 时 target_id ≠ 自己 |
+| 同一人对同一人只能评一次 | 唯一约束，可 PUT 修改 |
+| 仅评分人可修改评分 | PUT /api/reviews/:id 校验 reviewer_id |
+| 学生互评匿名 | GET reviews 学生只看自己被评的分，不显示评分人 |
+| 教师看全量 | GET reviews 教师可查看全部评分人和被评人 |
+| 里程碑不可手动改状态 | 只能通过 POST /api/milestones/:id/complete 自动校验完成 |
+| 贡献度需互评完成 | 所有成员均需给其他每位成员打分后才可查看 |
+| 报表需互评完成 | charts 和 export 同样校验所有成员互评完成 |
+
+**完整项目生命周期：**
+
+```
+创建项目 → 招募成员 → 分配任务 → 完成任务(DONE)
+    → 队长关闭项目(CLOSED) → 成员互评 → 查看贡献度 → 导出报表
+```
+
 ## Commit 规范
 
 ```
@@ -145,4 +169,5 @@ style: 格式调整
 | ✅ 前端基础架构搭建 | 已完成 |
 | ✅ UI组件库 + 前后端接口联调 | 已完成 |
 | ✅ 布局 + 页面开发 | 已完成 |
-| 🔜 双盲互评 + 贡献度 + 报表 | 下一步 |
+| ✅ 双盲互评 + 贡献度算法 + 报表导出 | 已完成 |
+| 🔜 前后端联调测试 | 下一步 |

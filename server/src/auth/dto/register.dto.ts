@@ -1,4 +1,4 @@
-import { IsString, IsEmail, MinLength, MaxLength } from 'class-validator';
+import { IsString, IsEmail, MinLength, MaxLength, IsOptional, IsEnum } from 'class-validator';
 
 export class RegisterDto {
   @IsString()
@@ -18,4 +18,8 @@ export class RegisterDto {
   @MinLength(1)
   @MaxLength(50)
   nickname!: string;
+
+  @IsOptional()
+  @IsEnum(['STUDENT', 'TEACHER'] as const)
+  role?: 'STUDENT' | 'TEACHER';
 }

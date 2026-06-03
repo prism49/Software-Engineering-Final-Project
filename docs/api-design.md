@@ -278,8 +278,8 @@ RECRUITING  ←→   ACTIVE
 ```
 
 - 队长可手动切换 `RECRUITING ↔ ACTIVE`
-- 任何状态都可直接关闭为 `CLOSED`
-- `CLOSED` 不可回退
+- 关闭为 `CLOSED` 时**所有任务必须为 DONE**，否则报错
+- `CLOSED` 不可回退；关闭后成员方可互评
 
 请求示例：
 ```json
@@ -295,7 +295,7 @@ RECRUITING  ←→   ACTIVE
 { "message": "项目已更新" }
 ```
 
-> 错误：`404` 项目不存在 / `403` 仅队长可操作 / `400` 非法状态流转 / `400` 已关闭的项目不能修改状态
+> 错误：`404` 项目不存在 / `403` 仅队长可操作 / `400` 非法状态流转 / `400` 有未完成任务无法关闭
 
 ---
 
@@ -642,9 +642,221 @@ POST /api/milestones/:id/complete
 
 ---
 
-## 五、Tag（标签）
+## 五、Review（互评）
 
-### 5.1 获取所有标签
+### 5.1 查看项目互评
+
+```
+GET /api/projects/:id/reviews
+```
+
+需要 Header：`Authorization: Bearer <token>`
+
+**返回规则：**
+- **教师（TEACHER）**：查看全部评分，含评分人和被评人信息
+- **学生（STUDENT）**：仅看到自己被评的分，**不显示评分人**（匿名）
+
+学生返回示例：
+```json
+[
+  {
+    "review_id": 1,
+    "score": 4,
+    "content": "技术能力强，帮助很大",
+    "created_at": "2026-06-02T10:00:00.000Z"
+  }
+]
+```
+
+教师返回示例：
+```json
+[
+  {
+    "review_id": 1,
+    "score": 4,
+    "content": "技术能力强，帮助很大",
+    "reviewer": { "user_id": 1, "username": "zhangsan", "nickname": "张三" },
+    "target": { "user_id": 2, "username": "lisi", "nickname": "李四" },
+    "created_at": "2026-06-02T10:00:00.000Z"
+  }
+]
+```
+
+---
+
+### 5.2 提交互评
+
+```
+POST /api/projects/:id/reviews
+```
+
+需要 Header：`Authorization: Bearer <token>`
+
+| 参数 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| target_id | int | 是 | 被评分人 ID |
+| score | int | 是 | 评分 1-5 |
+| content | string | 否 | 评语 |
+
+请求示例：
+```json
+{
+  "target_id": 2,
+  "score": 4,
+  "content": "技术能力强，帮助很大"
+}
+```
+
+返回示例：
+```json
+{ "review_id": 1, "message": "评分已提交" }
+```
+
+> 错误：`400` 项目关闭后才可提交互评 / `400` 不能给自己评分 / `409` 已评过该成员 / `403` 不是该项目成员
+>
+> **说明：** 项目必须关闭（`status=CLOSED`）后才可互评，关闭时所有任务须为 DONE。
+
+---
+
+### 5.3 修改评分
+
+```
+PUT /api/reviews/:id
+```
+
+需要 Header：`Authorization: Bearer <token>`（**仅评分人本人**）
+
+| 参数 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| score | int | 否 | 评分 1-5 |
+| content | string | 否 | 评语 |
+
+请求示例：
+```json
+{ "score": 5 }
+```
+
+返回示例：
+```json
+{ "message": "评分已更新" }
+```
+
+> 错误：`404` 评分不存在 / `403` 只能修改自己的评分
+
+---
+
+## 六、Contribution（贡献度）
+
+> 项目必须 `CLOSED` 且所有成员已完成互评，否则返回 400
+
+### 6.1 计算贡献度
+
+```
+GET /api/projects/:id/contributions
+```
+
+**算法说明：**
+
+| 维度 | 权重 | 来源 |
+|---|---|---|
+| 完成任务数 | 40% | task.status=DONE，按 assignee_id 统计 |
+| 任务权重和 | 30% | 已完成任务的 weight 求和 |
+| 互评均分 | 30% | 收到的 peer_review.score 平均值 |
+
+每项在成员间归一化为百分制后加权求和，再归一化为 100%。
+
+返回示例：
+```json
+[
+  {
+    "user_id": 6,
+    "username": "duizhang",
+    "nickname": "队长小王",
+    "tasks_done": 3,
+    "total_weight": 8,
+    "avg_score": 4.5,
+    "contribution": 52.3
+  },
+  {
+    "user_id": 7,
+    "username": "duiyuan",
+    "nickname": "队员小李",
+    "tasks_done": 2,
+    "total_weight": 5,
+    "avg_score": 4.0,
+    "contribution": 30.5
+  }
+]
+```
+
+> 错误：`400 互评尚未完成，以下成员还未给所有人评分：张三、李四`
+
+---
+
+## 七、Report（报表）
+
+### 7.1 图表数据
+
+```
+GET /api/projects/:id/report/charts
+```
+
+> 项目必须 `CLOSED` 且所有成员已完成互评，否则返回 400
+
+返回前端可直接绑定的图表数据：
+
+```json
+{
+  "taskStatusCount": { "TODO": 0, "DOING": 0, "REVIEW": 0, "DONE": 3 },
+  "memberTaskStats": [
+    { "user_id": 6, "nickname": "队长小王", "TODO": 0, "DOING": 0, "REVIEW": 0, "DONE": 2 },
+    { "user_id": 7, "nickname": "队员小李", "TODO": 0, "DOING": 0, "REVIEW": 0, "DONE": 1 }
+  ],
+  "milestoneProgress": [
+    { "milestone_id": 1, "title": "第一阶段", "status": "COMPLETED", "due_date": "2026-06-20" }
+  ],
+  "reviewSummary": [
+    { "user_id": 6, "nickname": "队长小王", "avg_score": 4.5, "count": 2 },
+    { "user_id": 7, "nickname": "队员小李", "avg_score": 4.0, "count": 1 }
+  ],
+  "contributions": [
+    { "user_id": 6, "nickname": "队长小王", "tasks_done": 2, "total_weight": 6, "avg_score": 4.5, "contribution": 55.3 },
+    { "user_id": 7, "nickname": "队员小李", "tasks_done": 1, "total_weight": 3, "avg_score": 4.0, "contribution": 44.7 }
+  ]
+}
+```
+
+| 字段 | 用途 |
+|---|---|
+| `taskStatusCount` | 饼图/柱状图：任务状态分布 |
+| `memberTaskStats` | 堆叠柱状图：每人各状态任务数 |
+| `milestoneProgress` | 里程碑完成情况 |
+| `reviewSummary` | 每人收到的互评均分 + 被评次数 |
+| `contributions` | 贡献度百分比（同 `/contributions` 算法） |
+
+---
+
+### 7.2 导出 Excel
+
+```
+GET /api/projects/:id/report/export
+```
+
+> 项目必须 `CLOSED` 且所有成员已完成互评
+
+浏览器直接下载 `.xlsx` 文件，包含三个 Sheet：
+
+| Sheet | 列 |
+|---|---|
+| 任务清单 | 标题 / 状态 / 执行人 / 里程碑 / 截止日期 |
+| 贡献度 | 成员 / 完成任务数 / 任务权重和 / 互评均分 / 贡献度(%) |
+| 互评明细 | 评分人 / 被评人 / 评分 / 评语 / 时间 |
+
+---
+
+## 八、Tag（标签）
+
+### 8.1 获取所有标签
 
 ```
 GET /api/tags
@@ -663,7 +875,7 @@ GET /api/tags
 
 ---
 
-### 5.2 获取我的技能标签
+### 8.2 获取我的技能标签
 
 ```
 GET /api/users/me/tags
@@ -681,7 +893,7 @@ GET /api/users/me/tags
 
 ---
 
-### 5.3 设置我的技能标签
+### 8.3 设置我的技能标签
 
 ```
 PUT /api/users/me/tags
@@ -718,6 +930,7 @@ PUT /api/users/me/tags
 | **项目** | `POST /projects` | 状态改为 CLOSED 即关闭 | `PATCH /projects/:id`（标题/描述/状态/标签/截止日） | `GET /projects`（大厅）、`GET /projects/:id`（详情） |
 | **任务** | `POST /projects/:id/tasks` | `DELETE /tasks/:id`（软删除） | `PATCH /tasks/:id`（标题/描述/状态/权重/指派人/里程碑/截止日）、`PATCH /tasks/:id/review`（审核） | `GET /projects/:id/tasks`、`GET /tasks/:id` |
 | **里程碑** | `POST /projects/:id/milestones` | `DELETE /milestones/:id`（软删除 + 关联 task 置 NULL） | `PATCH /milestones/:id`（标题/描述/截止日）、`POST /milestones/:id/complete`（完成） | 内嵌于 `GET /projects/:id` |
+| **互评** | `POST /projects/:id/reviews` | — | `PUT /reviews/:id`（score/content） | `GET /projects/:id/reviews`（学生匿名/教师全量） |
 
 ## 附录：接口速查表
 
@@ -742,6 +955,12 @@ PUT /api/users/me/tags
 | PATCH | `/milestones/:id` | 需要 | 更新里程碑 |
 | DELETE | `/milestones/:id` | 需要 | 删除里程碑 |
 | POST | `/milestones/:id/complete` | 需要 | 完成里程碑 |
+| GET | `/projects/:id/reviews` | 需要 | 查看互评 |
+| POST | `/projects/:id/reviews` | 需要 | 提交互评 |
+| PUT | `/reviews/:id` | 需要 | 修改评分 |
+| GET | `/projects/:id/contributions` | — | 贡献度计算 |
+| GET | `/projects/:id/report/charts` | — | 图表数据 |
+| GET | `/projects/:id/report/export` | — | 导出 Excel |
 | GET | `/tags` | — | 标签列表 |
 | GET | `/users/me/tags` | 需要 | 我的标签 |
 | PUT | `/users/me/tags` | 需要 | 设置标签 |

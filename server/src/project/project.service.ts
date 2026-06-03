@@ -180,7 +180,17 @@ export class ProjectService {
         throw new BadRequestException('已关闭的项目不能修改状态');
       }
       if (to === 'CLOSED') {
-        // 任何状态都可关闭
+        // 关闭前先查是否有未完成任务
+        const unfinished = await this.prisma.task.count({
+          where: {
+            project_id: BigInt(projectId),
+            is_deleted: false,
+            status: { not: 'DONE' },
+          },
+        });
+        if (unfinished > 0) {
+          throw new BadRequestException(`项目还有 ${unfinished} 个任务未完成，无法关闭`);
+        }
       } else if (from === 'RECRUITING' && to === 'ACTIVE') {
         // 队长手动开始项目
       } else if (from === 'ACTIVE' && to === 'RECRUITING') {
