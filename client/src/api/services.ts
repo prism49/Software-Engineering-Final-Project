@@ -1,20 +1,25 @@
 import { http } from './http';
 import type {
   AuthResponse,
+  ContributionItem,
   CreateMilestonePayload,
   CreateProjectPayload,
+  CreateReviewPayload,
   CreateTaskPayload,
   LoginPayload,
   MessageResponse,
   ProjectDetail,
+  ProjectReview,
   ProjectStatus,
   ProjectSummary,
+  ReportCharts,
   RegisterPayload,
   Tag,
   TaskItem,
   TaskStatus,
   UpdateMilestonePayload,
   UpdateProjectPayload,
+  UpdateReviewPayload,
   UpdateTaskPayload,
   User,
 } from '../types';
@@ -113,6 +118,35 @@ export const api = {
   },
   deleteMilestone: async (milestoneId: number) => {
     const { data } = await http.delete<MessageResponse>(`/milestones/${milestoneId}`);
+    return data;
+  },
+  getProjectReviews: async (projectId: number) => {
+    const { data } = await http.get<ProjectReview[]>(`/projects/${projectId}/reviews`);
+    return data;
+  },
+  createProjectReview: async (projectId: number, payload: CreateReviewPayload) => {
+    const { data } = await http.post<{ review_id: number; message: string }>(
+      `/projects/${projectId}/reviews`,
+      payload,
+    );
+    return data;
+  },
+  updateProjectReview: async (reviewId: number, payload: UpdateReviewPayload) => {
+    const { data } = await http.put<MessageResponse>(`/reviews/${reviewId}`, payload);
+    return data;
+  },
+  getProjectContributions: async (projectId: number) => {
+    const { data } = await http.get<ContributionItem[]>(`/projects/${projectId}/contributions`);
+    return data;
+  },
+  getProjectReportCharts: async (projectId: number) => {
+    const { data } = await http.get<ReportCharts>(`/projects/${projectId}/report/charts`);
+    return data;
+  },
+  exportProjectReport: async (projectId: number) => {
+    const { data } = await http.get<Blob>(`/projects/${projectId}/report/export`, {
+      responseType: 'blob',
+    });
     return data;
   },
 };

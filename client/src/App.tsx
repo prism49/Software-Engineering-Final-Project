@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Spin } from 'antd';
 import { AppLayout } from './layouts/AppLayout';
@@ -6,25 +7,7 @@ import { ProjectsPage } from './pages/ProjectsPage';
 import { ProjectDetailPage } from './pages/ProjectDetailPage';
 import { useAuth } from './store/auth';
 
-function ProtectedRoute({ children }: { children: JSX.Element }) {
-  const { isAuthenticated, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="page-loading">
-        <Spin size="large" />
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/auth" replace />;
-  }
-
-  return children;
-}
-
-function PublicOnlyRoute({ children }: { children: JSX.Element }) {
+function PublicOnlyRoute({ children }: { children: ReactNode }) {
   const { isAuthenticated, loading } = useAuth();
 
   if (loading) {

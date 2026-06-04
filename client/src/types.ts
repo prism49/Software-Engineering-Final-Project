@@ -140,7 +140,7 @@ export interface CreateTaskPayload {
   due_date?: string;
 }
 
-export interface UpdateTaskPayload extends CreateTaskPayload {
+export interface UpdateTaskPayload extends Partial<CreateTaskPayload> {
   status?: TaskStatus;
 }
 
@@ -151,3 +151,77 @@ export interface CreateMilestonePayload {
 }
 
 export interface UpdateMilestonePayload extends Partial<CreateMilestonePayload> {}
+
+export interface ReviewVisibleUser {
+  user_id: number;
+  username: string;
+  nickname: string;
+}
+
+export interface ProjectReview {
+  review_id: number;
+  score: number;
+  content: string | null;
+  created_at: string;
+  reviewer?: ReviewVisibleUser;
+  target?: ReviewVisibleUser;
+}
+
+export interface CreateReviewPayload {
+  target_id: number;
+  score: number;
+  content?: string;
+}
+
+export interface UpdateReviewPayload {
+  score?: number;
+  content?: string;
+}
+
+export interface ContributionItem {
+  user_id: number;
+  username: string;
+  nickname: string;
+  tasks_done: number;
+  total_weight: number;
+  avg_score: number;
+  contribution: number;
+}
+
+export interface ReportTaskStatusCount {
+  TODO: number;
+  DOING: number;
+  REVIEW: number;
+  DONE: number;
+}
+
+export interface ReportMemberTaskStats {
+  user_id: number;
+  nickname: string;
+  TODO: number;
+  DOING: number;
+  REVIEW: number;
+  DONE: number;
+}
+
+export interface ReportReviewSummary {
+  user_id: number;
+  nickname: string;
+  avg_score: number;
+  count: number;
+}
+
+export interface ReportCharts {
+  taskStatusCount: ReportTaskStatusCount;
+  memberTaskStats: ReportMemberTaskStats[];
+  milestoneProgress: MilestoneSummary[];
+  reviewSummary: ReportReviewSummary[];
+  contributions: Array<{
+    user_id: number;
+    nickname: string;
+    tasks_done: number;
+    total_weight: number;
+    avg_score: number;
+    contribution: number;
+  }>;
+}
