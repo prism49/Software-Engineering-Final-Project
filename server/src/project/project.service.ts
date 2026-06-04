@@ -118,6 +118,7 @@ export class ProjectService {
       milestones: p.milestones.map((m) => ({
         milestone_id: Number(m.milestone_id),
         title: m.title,
+        description: m.description,
         status: m.status,
         due_date: m.due_date,
       })),

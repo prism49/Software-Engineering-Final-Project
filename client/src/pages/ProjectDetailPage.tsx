@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
+  Avatar,
   Breadcrumb,
   Button,
   Card,
@@ -23,6 +24,7 @@ import {
   Table,
   Tabs,
   Tag,
+  Tooltip,
   Typography,
   message,
   Modal,
@@ -30,12 +32,12 @@ import {
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
-  ArrowLeftOutlined,
   BarChartOutlined,
   CommentOutlined,
   DownloadOutlined,
   EditOutlined,
   PlusOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import type {
@@ -77,11 +79,50 @@ function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : '操作失败，请稍后重试';
 }
 
+function truncateText(value: string, maxLength: number) {
+  const chars = Array.from(value);
+  if (chars.length <= maxLength) {
+    return { text: value, truncated: false };
+  }
+
+  return {
+    text: `${chars.slice(0, maxLength).join('')}...`,
+    truncated: true,
+  };
+}
+
+function renderTruncatedText(
+  value: string | null | undefined,
+  maxLength: number,
+  fallback: string,
+  options?: {
+    type?: 'secondary';
+    strong?: boolean;
+    block?: boolean;
+    style?: React.CSSProperties;
+  },
+) {
+  const content = value?.trim() ? value : fallback;
+  const { text, truncated } = truncateText(content, maxLength);
+  const textNode = (
+    <Typography.Text
+      type={options?.type}
+      strong={options?.strong}
+      style={{ ...(options?.block ? { display: 'block' } : undefined), ...options?.style }}
+    >
+      {text}
+    </Typography.Text>
+  );
+
+  return truncated ? <Tooltip title={content}>{textNode}</Tooltip> : textNode;
+}
+
 export function ProjectDetailPage() {
   const navigate = useNavigate();
   const { projectId } = useParams();
   const { user, isAuthenticated } = useAuth();
   const [messageApi, contextHolder] = message.useMessage();
+  const [modalApi, modalContextHolder] = Modal.useModal();
   const [loading, setLoading] = useState(true);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [project, setProject] = useState<ProjectDetail | null>(null);
@@ -97,13 +138,16 @@ export function ProjectDetailPage() {
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [milestoneModalOpen, setMilestoneModalOpen] = useState(false);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [applyOpen, setApplyOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<TaskItem | null>(null);
   const [editingMilestoneId, setEditingMilestoneId] = useState<number | null>(null);
   const [editingReview, setEditingReview] = useState<ProjectReview | null>(null);
+  const [taskMilestoneFilter, setTaskMilestoneFilter] = useState<string>('all');
   const [projectForm] = Form.useForm();
   const [taskForm] = Form.useForm();
   const [milestoneForm] = Form.useForm();
   const [reviewForm] = Form.useForm();
+  const [applyForm] = Form.useForm<{ apply_reason?: string }>();
 
   const numericProjectId = Number(projectId);
 
@@ -178,6 +222,20 @@ export function ProjectDetailPage() {
     void loadData();
   }, [loadData]);
 
+  useEffect(() => {
+    if (taskMilestoneFilter === 'all' || taskMilestoneFilter === 'none') {
+      return;
+    }
+
+    const hasMatchedMilestone = project?.milestones.some(
+      (milestone) => String(milestone.milestone_id) === taskMilestoneFilter,
+    );
+
+    if (!hasMatchedMilestone) {
+      setTaskMilestoneFilter('all');
+    }
+  }, [project?.milestones, taskMilestoneFilter]);
+
   const approvedMembers = useMemo(
     () => (project?.members ?? []).filter((member) => member.status === 'APPROVED'),
     [project],
@@ -202,6 +260,66 @@ export function ProjectDetailPage() {
   const canCreateReview = Boolean(
     isApprovedMember && project?.status === 'CLOSED' && reviewTargets.length > 0,
   );
+  const currentMembership = project?.members.find((member) => member.user_id === user?.user_id);
+  const getUserHomePath = useCallback(
+    (memberUserId: number) => (user?.user_id === memberUserId ? '/my-projects' : `/users/${memberUserId}`),
+    [user],
+  );
+  const showApplyButton = Boolean(
+    project &&
+      (!user ||
+        (project.leader.user_id !== user.user_id && currentMembership?.status !== 'APPROVED')),
+  );
+  const milestoneFilterOptions = useMemo(
+    () => [
+      { value: 'all', label: `全部任务 (${tasks.length})` },
+      { value: 'none', label: `未关联里程碑 (${tasks.filter((task) => !task.milestone).length})` },
+      ...(project?.milestones.map((milestone) => ({
+        value: String(milestone.milestone_id),
+        label: `${truncateText(milestone.title, 10).text} (${tasks.filter((task) => task.milestone?.milestone_id === milestone.milestone_id).length})`,
+      })) ?? []),
+    ],
+    [project?.milestones, tasks],
+  );
+  const filteredTasks = useMemo(() => {
+    if (taskMilestoneFilter === 'all') {
+      return tasks;
+    }
+
+    if (taskMilestoneFilter === 'none') {
+      return tasks.filter((task) => !task.milestone);
+    }
+
+    const milestoneId = Number(taskMilestoneFilter);
+    return tasks.filter((task) => task.milestone?.milestone_id === milestoneId);
+  }, [taskMilestoneFilter, tasks]);
+  const milestoneTaskProgress = useMemo(() => {
+    const progressMap = new Map<
+      number,
+      {
+        total: number;
+        done: number;
+        percent: number;
+      }
+    >();
+
+    tasks.forEach((task) => {
+      const milestoneId = task.milestone?.milestone_id;
+      if (!milestoneId) {
+        return;
+      }
+
+      const current = progressMap.get(milestoneId) ?? { total: 0, done: 0, percent: 0 };
+      current.total += 1;
+      if (task.status === 'DONE') {
+        current.done += 1;
+      }
+      current.percent = Math.round((current.done / current.total) * 100);
+      progressMap.set(milestoneId, current);
+    });
+
+    return progressMap;
+  }, [tasks]);
 
   const requireLogin = useCallback(() => {
     if (!isAuthenticated) {
@@ -244,7 +362,7 @@ export function ProjectDetailPage() {
     setEditingMilestoneId(milestoneId ?? null);
     milestoneForm.setFieldsValue({
       title: milestone?.title,
-      description: undefined,
+      description: milestone?.description ?? undefined,
       due_date: toDatePickerValue(milestone?.due_date),
     });
     setMilestoneModalOpen(true);
@@ -483,6 +601,79 @@ export function ProjectDetailPage() {
     }
   };
 
+  const handleApplyToProject = async () => {
+    if (!project || !requireLogin()) {
+      return;
+    }
+
+    try {
+      const values = await applyForm.validateFields();
+      const result = await api.applyToProject(project.project_id, values.apply_reason);
+      messageApi.success(result.message);
+      setApplyOpen(false);
+      applyForm.resetFields();
+      await loadData();
+    } catch (error) {
+      messageApi.error(getErrorMessage(error));
+    }
+  };
+
+  const handleTryOpenApplyModal = () => {
+    if (!project) {
+      return;
+    }
+
+    const approvedCount = approvedMembers.length;
+
+    if (!isAuthenticated) {
+      modalApi.info({
+        title: '当前无法申请加入',
+        content: '请先登录后再申请加入该项目。',
+        okText: '知道了',
+      });
+      return;
+    }
+
+    if (project.status !== 'RECRUITING') {
+      modalApi.info({
+        title: '当前无法申请加入',
+        content: '项目状态不是“招募中”，暂时不能申请加入。',
+        okText: '知道了',
+      });
+      return;
+    }
+
+    if (approvedCount >= project.max_members) {
+      modalApi.info({
+        title: '当前无法申请加入',
+        content: '项目人员已满，暂时不能继续申请加入。',
+        okText: '知道了',
+      });
+      return;
+    }
+
+    if (currentMembership?.status === 'APPROVED') {
+      modalApi.info({
+        title: '当前无法申请加入',
+        content: '你已经是该项目成员，无需重复申请。',
+        okText: '知道了',
+      });
+      return;
+    }
+
+    if (currentMembership?.status === 'PENDING') {
+      modalApi.info({
+        title: '当前无法申请加入',
+        content: '你已提交过申请，请等待队长审批。',
+        okText: '知道了',
+      });
+      return;
+    }
+
+    applyForm.resetFields();
+    setApplyOpen(true);
+  };
+
   const taskColumns: ColumnsType<TaskItem> = [
     {
       title: '任务',
@@ -490,8 +681,8 @@ export function ProjectDetailPage() {
       key: 'title',
       render: (_, task) => (
         <Space direction="vertical" size={2}>
-          <Typography.Text strong>{task.title}</Typography.Text>
-          <Typography.Text type="secondary">{task.description || '暂无描述'}</Typography.Text>
+          {renderTruncatedText(task.title, 10, '未命名任务', { strong: true })}
+          {renderTruncatedText(task.description, 30, '暂无描述', { type: 'secondary' })}
         </Space>
       ),
     },
@@ -506,12 +697,15 @@ export function ProjectDetailPage() {
     {
       title: '执行人',
       key: 'assignee',
-      render: (_, task) => task.assignee?.nickname || '未指派',
+      render: (_, task) => task.assignee?.nickname || '未认领',
     },
     {
       title: '里程碑',
       key: 'milestone',
-      render: (_, task) => task.milestone?.title || '无',
+      render: (_, task) =>
+        task.milestone
+          ? renderTruncatedText(task.milestone.title, 10, '无')
+          : '无',
     },
     {
       title: '截止日期',
@@ -520,7 +714,7 @@ export function ProjectDetailPage() {
       render: (value: string | null) => formatDate(value),
     },
     {
-      title: '权重',
+      title: '任务分值',
       dataIndex: 'weight',
       key: 'weight',
       width: 80,
@@ -688,6 +882,7 @@ export function ProjectDetailPage() {
   return (
     <div className="page-stack">
       {contextHolder}
+      {modalContextHolder}
 
       <Breadcrumb
         items={[
@@ -695,25 +890,26 @@ export function ProjectDetailPage() {
             title: <Link to="/projects">项目大厅</Link>,
           },
           {
-            title: project.title,
+            title: (
+              <Tooltip title={project.title}>
+                <span>{truncateText(project.title, 10).text}</span>
+              </Tooltip>
+            ),
           },
         ]}
       />
 
-      <Card variant="borderless">
+      <Card variant="borderless" className="page-hero-card">
         <Flex justify="space-between" align="center" wrap="wrap" gap={16}>
           <div>
-            <Button
-              type="text"
-              icon={<ArrowLeftOutlined />}
-              style={{ paddingInline: 0, marginBottom: 8, color: '#64748b' }}
-              onClick={() => navigate('/projects')}
-            >
-              返回项目大厅
-            </Button>
             <Space wrap align="center" size="middle">
               <Typography.Title level={2} style={{ margin: 0 }}>
-                {project.title}
+                {(() => {
+                  const { text, truncated } = truncateText(project.title, 10);
+                  const titleNode = <span>{text}</span>;
+
+                  return truncated ? <Tooltip title={project.title}>{titleNode}</Tooltip> : titleNode;
+                })()}
               </Typography.Title>
               <Tag
                 color={projectStatusColor[project.status]}
@@ -726,7 +922,7 @@ export function ProjectDetailPage() {
               type="secondary"
               style={{ marginTop: 12, marginBottom: 0, fontSize: 15 }}
             >
-              {project.description || '暂无项目描述'}
+              {renderTruncatedText(project.description, 30, '暂无项目描述')}
             </Typography.Paragraph>
           </div>
 
@@ -734,6 +930,15 @@ export function ProjectDetailPage() {
             {isLeader && (
               <Button icon={<EditOutlined />} onClick={openProjectModal} size="large">
                 编辑项目
+              </Button>
+            )}
+            {showApplyButton && (
+              <Button
+                type="primary"
+                onClick={handleTryOpenApplyModal}
+                size="large"
+              >
+                申请加入
               </Button>
             )}
             {isApprovedMember && (
@@ -755,8 +960,8 @@ export function ProjectDetailPage() {
         </Flex>
       </Card>
 
-      <Row gutter={[24, 24]}>
-        <Col xs={24} xl={16}>
+      <Row gutter={[16, 16]}>
+        <Col xs={24} xl={17} xxl={18}>
           <Space direction="vertical" size="large" style={{ width: '100%' }}>
             <Card variant="borderless" title="项目概览">
               <Descriptions
@@ -784,7 +989,7 @@ export function ProjectDetailPage() {
                         <Tag
                           key={tag.tag_id}
                           bordered={false}
-                          style={{ background: '#f1f5f9', color: '#475569' }}
+                          style={{ background: 'rgba(255, 255, 255, 0.58)', color: '#475569' }}
                         >
                           {tag.name}
                         </Tag>
@@ -797,10 +1002,28 @@ export function ProjectDetailPage() {
               </Descriptions>
             </Card>
 
-            <Card variant="borderless" title="任务管理" styles={{ body: { padding: 0 } }}>
+            <Card
+              variant="borderless"
+              title="任务管理"
+              extra={
+                <Space wrap size="middle">
+                  <Typography.Text type="secondary">
+                    当前显示 {filteredTasks.length} / {tasks.length}
+                  </Typography.Text>
+                  <Select
+                    value={taskMilestoneFilter}
+                    onChange={setTaskMilestoneFilter}
+                    options={milestoneFilterOptions}
+                    style={{ minWidth: 220 }}
+                    popupMatchSelectWidth={false}
+                  />
+                </Space>
+              }
+              styles={{ body: { padding: 0 } }}
+            >
               <Table
                 rowKey="task_id"
-                dataSource={tasks}
+                dataSource={filteredTasks}
                 columns={taskColumns}
                 locale={{ emptyText: '暂无任务' }}
                 pagination={{ pageSize: 6 }}
@@ -815,6 +1038,10 @@ export function ProjectDetailPage() {
                 <List
                   dataSource={project.milestones}
                   renderItem={(milestone) => (
+                    (() => {
+                      const milestoneProgress = milestoneTaskProgress.get(milestone.milestone_id);
+
+                      return (
                     <List.Item
                       style={{ padding: '20px 24px' }}
                       actions={
@@ -855,9 +1082,10 @@ export function ProjectDetailPage() {
                       <List.Item.Meta
                         title={
                           <Space wrap size="middle">
-                            <Typography.Text strong style={{ fontSize: 16 }}>
-                              {milestone.title}
-                            </Typography.Text>
+                            {renderTruncatedText(milestone.title, 10, '未命名里程碑', {
+                              strong: true,
+                              style: { fontSize: 16 },
+                            })}
                             <Tag
                               color={
                                 milestone.status === 'COMPLETED' ? 'success' : 'processing'
@@ -869,15 +1097,28 @@ export function ProjectDetailPage() {
                           </Space>
                         }
                         description={
-                          <Typography.Text
-                            type="secondary"
-                            style={{ marginTop: 8, display: 'block' }}
-                          >
-                            截止日期：{formatDate(milestone.due_date)}
-                          </Typography.Text>
+                          <Space direction="vertical" size={4} style={{ marginTop: 8 }}>
+                            <Typography.Text type="secondary">
+                              截止日期：{formatDate(milestone.due_date)}
+                            </Typography.Text>
+                            {renderTruncatedText(milestone.description, 30, '暂无描述', {
+                              type: 'secondary',
+                              block: true,
+                            })}
+                            {milestoneProgress && (
+                              <Space direction="vertical" size={6} style={{ width: '100%' }}>
+                                <Typography.Text type="secondary">
+                                  任务进度：{milestoneProgress.done}/{milestoneProgress.total}
+                                </Typography.Text>
+                                <Progress percent={milestoneProgress.percent} size="small" />
+                              </Space>
+                            )}
+                          </Space>
                         }
                       />
                     </List.Item>
+                      );
+                    })()
                   )}
                 />
               )}
@@ -885,40 +1126,23 @@ export function ProjectDetailPage() {
           </Space>
         </Col>
 
-        <Col xs={24} xl={8}>
+        <Col xs={24} xl={7} xxl={6}>
           <Space direction="vertical" size="large" style={{ width: '100%' }}>
             <Card variant="borderless" title="项目成员">
               <List
                 dataSource={project.members}
                 locale={{ emptyText: '暂无成员' }}
                 renderItem={(member) => (
-                  <List.Item
-                    actions={
-                      isLeader && member.status === 'PENDING'
-                        ? [
-                            <Button
-                              key="approve"
-                              type="link"
-                              onClick={() => void handleMemberApprove(member, 'APPROVED')}
-                            >
-                              批准
-                            </Button>,
-                            <Button
-                              key="reject"
-                              type="link"
-                              danger
-                              onClick={() => void handleMemberApprove(member, 'REJECTED')}
-                            >
-                              拒绝
-                            </Button>,
-                          ]
-                        : []
-                    }
-                  >
+                  <List.Item>
                     <List.Item.Meta
                       title={
                         <Space>
-                          <Typography.Text strong>{member.nickname}</Typography.Text>
+                          <Link to={getUserHomePath(member.user_id)} className="project-user-link">
+                            <Space size={8} className="project-user-link-inner">
+                              <Avatar size={20} icon={<UserOutlined />} />
+                              <span className="project-user-link-text">{member.nickname}</span>
+                            </Space>
+                          </Link>
                           <Tag bordered={false}>{member.role}</Tag>
                           <Tag
                             bordered={false}
@@ -928,9 +1152,11 @@ export function ProjectDetailPage() {
                           </Tag>
                         </Space>
                       }
-                      description={`@${member.username} · 加入时间：${formatDate(
-                        member.joined_at,
-                      )}`}
+                      description={
+                        member.status === 'APPROVED'
+                          ? `@${member.username} · 加入时间：${formatDate(member.joined_at)}`
+                          : `@${member.username}`
+                      }
                     />
                   </List.Item>
                 )}
@@ -949,7 +1175,7 @@ export function ProjectDetailPage() {
                       key={member.user_id}
                       size="small"
                       type="inner"
-                      style={{ background: '#f8fafc' }}
+                      style={{ background: 'rgba(255, 255, 255, 0.46)' }}
                     >
                       <Flex justify="space-between" align="center">
                         <div>
@@ -964,6 +1190,7 @@ export function ProjectDetailPage() {
                               size="small"
                               type="primary"
                               ghost
+                              style={{ color: '#ffffff', borderColor: '#ffffff' }}
                               onClick={() => void handleMemberApprove(member, 'APPROVED')}
                             >
                               批准
@@ -990,7 +1217,7 @@ export function ProjectDetailPage() {
 
       <Card
         variant="borderless"
-        title="互评、贡献度与报表"
+        title="双盲互评、贡献度与报表"
         extra={
           project.status === 'CLOSED' ? (
             <Button
@@ -1009,7 +1236,7 @@ export function ProjectDetailPage() {
               label: (
                 <Space size={6}>
                   <CommentOutlined />
-                  <span>互评</span>
+                  <span>双盲互评</span>
                 </Space>
               ),
               children: (
@@ -1342,6 +1569,23 @@ export function ProjectDetailPage() {
           ]}
         />
       </Card>
+
+      <Modal
+        title="申请加入项目"
+        open={applyOpen}
+        onOk={() => void handleApplyToProject()}
+        onCancel={() => {
+          setApplyOpen(false);
+          applyForm.resetFields();
+        }}
+        destroyOnHidden
+      >
+        <Form layout="vertical" form={applyForm}>
+          <Form.Item label="申请理由" name="apply_reason">
+            <Input.TextArea rows={4} placeholder="介绍一下你能为这个项目带来的帮助" maxLength={300} showCount />
+          </Form.Item>
+        </Form>
+      </Modal>
 
       <Modal
         title="编辑项目"

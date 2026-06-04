@@ -1,8 +1,9 @@
 :root {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  color: #1e293b;
-  background-color: #f8fafc;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  color: #1f2328;
+  background: #f6f8fa;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 * {
@@ -16,73 +17,180 @@ body,
   min-height: 100%;
 }
 
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
-  background: radial-gradient(at 0% 0%, rgba(79, 70, 229, 0.05) 0px, transparent 50%),
-              radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.05) 0px, transparent 50%);
-  background-attachment: fixed;
+  min-height: 100vh;
+  overflow-y: scroll;
+  background: #f6f8fa;
+  color: #1f2328;
 }
 
-/* 布局美化 */
-.app-shell {
-  background: transparent !important;
+a {
+  color: inherit;
 }
 
-.app-header {
-  background: rgba(255, 255, 255, 0.7) !important;
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
-  padding-inline: 40px !important;
-  height: 72px !important;
-  line-height: 72px !important;
-  position: sticky;
+.github-shell {
+  min-height: 100vh;
+  background: #f6f8fa !important;
+}
+
+.github-sidebar {
+  position: sticky !important;
   top: 0;
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  height: 100vh;
+  overflow: auto;
+  background: #ffffff !important;
+  border-right: 1px solid #d8dee4;
 }
 
-.app-brand {
-  min-width: 200px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+.github-sidebar-brand {
+  padding: 24px 20px 16px;
 }
 
-.app-brand h4 {
-  color: #1e293b !important;
-  font-weight: 800 !important;
-  letter-spacing: -0.025em;
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+.github-sidebar-brand h4 {
+  font-weight: 700 !important;
+  color: #1f2328 !important;
 }
 
-.app-brand span {
-  color: #64748b !important;
-  font-size: 12px;
-  line-height: 1;
-  margin-top: -4px;
+.github-sidebar-brand .ant-typography {
+  font-size: 13px;
 }
 
-.app-menu {
+.github-sidebar-menu {
+  border-inline-end: none !important;
   background: transparent !important;
-  border-bottom: none !important;
-  margin-left: 24px;
+  padding: 0 12px;
 }
 
-.app-menu .ant-menu-item {
-  color: #64748b !important;
+.github-sidebar-menu .ant-menu-item {
+  height: 38px !important;
+  line-height: 38px !important;
+  margin: 4px 0 !important;
+  border-radius: 6px !important;
+  color: #57606a !important;
   font-weight: 500;
 }
 
-.app-menu .ant-menu-item-selected {
-  color: #4f46e5 !important;
+.github-sidebar-menu .ant-menu-item:hover {
+  background: #f6f8fa !important;
+  color: #1f2328 !important;
 }
 
-.app-menu .ant-menu-item-selected::after {
-  border-bottom-color: #4f46e5 !important;
-  border-bottom-width: 3px !important;
+.github-sidebar-menu .ant-menu-item-selected {
+  background: #f3f4f6 !important;
+  color: #24292f !important;
+}
+
+.github-sidebar-menu .ant-menu-item-selected::after {
+  display: none !important;
+}
+
+.github-sidebar-section {
+  padding: 20px 16px 16px;
+  border-top: 1px solid #d8dee4;
+}
+
+.github-sidebar-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.github-sidebar-section-header .ant-btn-link {
+  padding-inline: 0;
+}
+
+.github-sidebar-loading,
+.github-sidebar-empty {
+  padding: 16px 8px;
+}
+
+.github-sidebar-projects {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.github-project-link {
+  display: flex;
+  align-items: center;
+  padding: 8px 10px;
+  min-height: 38px;
+  border-radius: 6px;
+  color: #57606a;
+  text-decoration: none;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.github-project-link:hover {
+  background: #f6f8fa;
+  color: #1f2328;
+}
+
+.github-project-link.is-active {
+  background: #f3f4f6;
+  color: #24292f;
+}
+
+.github-project-link span {
+  flex: 1;
+  min-width: 0;
+  display: block;
+  line-height: 1.4;
+  padding-bottom: 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.github-main {
+  min-height: 100vh;
+  background: #ffffff !important;
+}
+
+.github-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px !important;
+  padding: 0 32px !important;
+  background: rgba(246, 248, 250, 0.92) !important;
+  border-bottom: 1px solid #d8dee4;
+  backdrop-filter: blur(10px);
+}
+
+.github-topbar-title h4 {
+  font-weight: 600 !important;
+  letter-spacing: -0.01em;
+}
+
+.github-topbar-actions {
+  min-width: 0;
+  max-width: 60%;
+  justify-content: flex-end;
+}
+
+.github-user-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.github-user-trigger:hover {
+  background: #ffffff;
+  border-color: #d0d7de;
 }
 
 .app-user-info {
@@ -92,22 +200,92 @@ body {
 }
 
 .app-user-info .ant-typography {
+  color: #1f2328 !important;
   font-weight: 600;
-  color: #1e293b !important;
 }
 
-.app-content {
-  padding: 40px !important;
-  max-width: 1440px;
-  margin: 0 auto;
-  width: 100%;
+.app-skill-tags {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  min-width: 0;
+  max-width: min(32vw, 420px);
+  overflow: hidden;
+  white-space: nowrap;
+  flex-wrap: nowrap;
 }
 
-/* 页面通用类 */
+.app-skill-tag {
+  flex: 0 0 auto;
+  margin-inline-end: 0 !important;
+  color: #57606a !important;
+  background: #ffffff !important;
+  border: 1px solid #d0d7de !important;
+}
+
+.app-skill-empty {
+  display: inline-block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-user-avatar {
+  flex-shrink: 0;
+  color: #57606a !important;
+  background: #f6f8fa !important;
+  border: 1px solid #d0d7de;
+}
+
+.github-content {
+  padding: 24px 32px 40px !important;
+  background: #ffffff;
+}
+
 .page-stack {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
+}
+
+.page-hero-card .ant-card-body {
+  padding-block: 20px;
+}
+
+.page-toolbar-card .ant-card-body {
+  padding-block: 16px;
+}
+
+.project-rect-list .ant-list-items {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.project-list-item {
+  margin: 0;
+  border: 1px solid #d8dee4;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(31, 35, 40, 0.06);
+  transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+.project-list-item:hover {
+  border-color: #8c959f;
+  background: #fafbfc;
+  box-shadow: 0 2px 6px rgba(31, 35, 40, 0.08), 0 8px 18px rgba(140, 149, 159, 0.14);
+}
+
+.project-list-item .ant-list-item-action {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #d8dee4;
+}
+
+.project-list-item .ant-list-item-meta {
+  margin-bottom: 0;
 }
 
 .page-loading,
@@ -118,85 +296,453 @@ body {
   justify-content: center;
 }
 
-/* 认证页面美化 */
+.project-list-shell {
+  min-height: 520px;
+  display: flex;
+  flex-direction: column;
+}
+
+.project-list-shell .ant-list {
+  width: 100%;
+}
+
+.project-list-state {
+  min-height: 520px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.project-user-link,
+.profile-inline-user-link,
+.profile-repo-name-link {
+  color: #24292f;
+  text-decoration: none;
+}
+
+.project-user-link-inner {
+  align-items: center;
+}
+
+.project-user-link-text {
+  color: inherit;
+  text-decoration: none;
+}
+
+.project-user-link:hover,
+.profile-inline-user-link:hover,
+.profile-repo-name-link:hover {
+  color: #0969da;
+  text-decoration: underline;
+}
+
+.project-user-link:hover .project-user-link-text {
+  text-decoration: underline;
+}
+
+.project-display-title {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.profile-page {
+  width: 100%;
+}
+
+.profile-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  gap: 32px;
+  align-items: start;
+}
+
+.profile-sidebar-column {
+  min-width: 0;
+}
+
+.profile-card {
+  position: sticky;
+  top: 88px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.profile-avatar {
+  color: #57606a !important;
+  background: #f6f8fa !important;
+  border: 1px solid #d0d7de;
+}
+
+.profile-name {
+  margin: 0 !important;
+  font-weight: 600 !important;
+}
+
+.profile-username {
+  font-size: 16px;
+}
+
+.profile-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px 0;
+  border-top: 1px solid #d8dee4;
+  border-bottom: 1px solid #d8dee4;
+}
+
+.profile-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.profile-meta-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.profile-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #57606a;
+}
+
+.profile-skill-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.profile-skill-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.profile-skill-tag {
+  margin: 0 !important;
+  color: #57606a !important;
+  background: #f6f8fa !important;
+  border: 1px solid #d0d7de !important;
+}
+
+.profile-main-column {
+  min-width: 0;
+}
+
+.profile-main-header {
+  margin-bottom: 20px;
+}
+
+.profile-repo-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.profile-repo-header {
+  padding-bottom: 12px;
+  border-bottom: 1px solid #d8dee4;
+}
+
+.profile-repo-list .ant-list-items {
+  gap: 16px;
+}
+
+.profile-repo-item {
+  gap: 16px;
+}
+
+.profile-repo-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.profile-repo-name-link {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.profile-repo-description {
+  margin-bottom: 12px !important;
+}
+
+.profile-repo-meta {
+  margin-bottom: 12px;
+}
+
+.profile-repo-tags {
+  width: 100%;
+}
+
+.profile-empty-state {
+  min-height: 260px;
+  border: 1px dashed #d8dee4;
+  border-radius: 8px;
+}
+
 .auth-page {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-  position: relative;
-  overflow: hidden;
-}
-
-.auth-page::before {
-  content: '';
-  position: absolute;
-  width: 1000px;
-  height: 1000px;
-  background: radial-gradient(circle, rgba(79, 70, 229, 0.08) 0%, transparent 70%);
-  top: -400px;
-  right: -300px;
+  padding: 32px;
+  background: #f6f8fa;
 }
 
 .auth-card {
   width: 100%;
-  max-width: 480px;
-  background: rgba(255, 255, 255, 0.8) !important;
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  border-radius: 24px !important;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1) !important;
-  padding: 12px;
+  max-width: 420px;
+  padding: 8px;
 }
 
 .auth-card h2 {
-  font-weight: 800 !important;
-  letter-spacing: -0.05em;
-  margin-bottom: 8px !important;
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  margin-bottom: 4px !important;
+  color: #1f2328 !important;
+  font-weight: 600 !important;
 }
 
-/* 卡片与组件微调 */
 .ant-card {
-  border: 1px solid rgba(226, 232, 240, 0.6) !important;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  background: #ffffff !important;
+  border: 1px solid #d8dee4 !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
 }
 
 .ant-card:hover {
-  border-color: rgba(79, 70, 229, 0.2) !important;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05) !important;
+  border-color: #d0d7de !important;
+}
+
+.ant-card-head {
+  border-bottom: 1px solid #d8dee4 !important;
+}
+
+.ant-card-head-title {
+  color: #1f2328;
+  font-weight: 600 !important;
+}
+
+.ant-card-type-inner {
+  background: #f6f8fa !important;
+  box-shadow: none !important;
+}
+
+.ant-btn {
+  border-radius: 6px !important;
+  box-shadow: none !important;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease !important;
+}
+
+.ant-btn-primary {
+  background: #1f883d !important;
+  border-color: #1f883d !important;
+}
+
+.ant-btn-primary:hover {
+  background: #1a7f37 !important;
+  border-color: #1a7f37 !important;
+}
+
+.ant-btn:not(.ant-btn-primary):not(.ant-btn-link):not(.ant-btn-text) {
+  background: #f6f8fa !important;
+  border-color: #d0d7de !important;
+  color: #1f2328 !important;
+}
+
+.ant-btn:not(.ant-btn-primary):not(.ant-btn-link):not(.ant-btn-text):hover {
+  background: #f3f4f6 !important;
+  border-color: #8c959f !important;
+}
+
+.ant-input,
+.ant-input-password,
+.ant-input-number,
+.ant-picker,
+.ant-select-selector {
+  background: #ffffff !important;
+  border-color: #d0d7de !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+}
+
+.ant-input:hover,
+.ant-input-password:hover,
+.ant-input-number:hover,
+.ant-picker:hover,
+.ant-select-selector:hover {
+  border-color: #8c959f !important;
+}
+
+.ant-input:focus,
+.ant-input-focused,
+.ant-picker-focused,
+.ant-select-focused .ant-select-selector {
+  border-color: #57606a !important;
+  box-shadow: 0 0 0 3px rgba(87, 96, 106, 0.12) !important;
 }
 
 .ant-tag {
-  border: none;
-  font-weight: 500;
+  border-radius: 999px;
   padding: 2px 10px;
-  border-radius: 6px;
+  font-weight: 500;
 }
 
-/* 响应式适配 */
-@media (max-width: 768px) {
-  .app-header {
-    padding-inline: 16px !important;
-    height: auto !important;
-    padding-block: 12px;
-    flex-direction: column;
-    align-items: stretch;
+.ant-progress-bg {
+  background: #57606a !important;
+}
+
+.ant-table,
+.ant-table-container,
+.ant-table-content,
+.ant-table-cell {
+  background: transparent !important;
+}
+
+.ant-table-thead > tr > th {
+  background: #f6f8fa !important;
+  color: #57606a !important;
+  font-weight: 600 !important;
+  border-bottom: 1px solid #d8dee4 !important;
+}
+
+.ant-table-tbody > tr > td {
+  border-bottom: 1px solid #d8dee4 !important;
+}
+
+.ant-table-tbody > tr:hover > td {
+  background: #f6f8fa !important;
+}
+
+.ant-list-item {
+  transition: background-color 160ms ease;
+}
+
+.ant-list-item:hover {
+  background: #f6f8fa;
+}
+
+.ant-tabs-tab {
+  border-radius: 6px !important;
+  padding-inline: 10px !important;
+}
+
+.ant-tabs-tab:hover {
+  background: #f6f8fa;
+}
+
+.ant-tabs-ink-bar {
+  height: 2px !important;
+  border-radius: 999px !important;
+  background: #57606a !important;
+}
+
+.ant-alert {
+  border-radius: 8px !important;
+  border: 1px solid #d8dee4;
+}
+
+.ant-modal-content {
+  border-radius: 8px !important;
+  border: 1px solid #d8dee4 !important;
+  box-shadow: 0 16px 32px rgba(31, 35, 40, 0.12) !important;
+}
+
+.ant-modal-header,
+.ant-modal-footer {
+  background: transparent !important;
+}
+
+.ant-modal-header {
+  border-bottom: none !important;
+}
+
+.ant-modal-footer {
+  border-top: none !important;
+}
+
+.ant-breadcrumb a {
+  color: #57606a;
+}
+
+.skill-tags-tooltip {
+  max-width: 280px;
+}
+
+.skill-tags-tooltip .ant-tooltip-inner {
+  padding: 6px 10px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+@media (max-width: 1024px) {
+  .github-shell {
+    display: block !important;
   }
 
-  .app-brand {
-    margin-bottom: 8px;
+  .github-sidebar {
+    position: relative !important;
+    width: 100% !important;
+    height: auto;
+    max-width: none !important;
+    border-right: none;
+    border-bottom: 1px solid #d8dee4;
   }
 
-  .app-menu {
-    margin-left: 0;
-    margin-bottom: 8px;
+  .github-topbar {
+    padding: 0 20px !important;
   }
 
-  .app-content {
+  .github-content {
     padding: 20px !important;
+  }
+
+  .profile-layout {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .profile-card {
+    position: static;
+  }
+
+  .profile-repo-title-row {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 768px) {
+  .github-topbar {
+    height: auto !important;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px !important;
+  }
+
+  .github-topbar-actions {
+    width: 100%;
+    max-width: none;
+    justify-content: space-between;
+  }
+
+  .github-user-trigger {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .app-skill-tags {
+    max-width: none;
+    justify-content: flex-start;
   }
 }

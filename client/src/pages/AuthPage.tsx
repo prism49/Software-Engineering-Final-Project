@@ -1,4 +1,4 @@
-import { Card, Tabs, Form, Input, Button, message, Typography } from 'antd';
+import { Card, Tabs, Form, Input, Button, Select, message, Typography } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../store/auth';
 
@@ -60,16 +60,22 @@ export function AuthPage() {
                   <Form.Item
                     label="用户名"
                     name="username"
-                    rules={[{ required: true, message: '请输入用户名' }]}
+                    rules={[
+                      { required: true, whitespace: true, message: '请输入用户名' },
+                      { min: 2, max: 32, message: '用户名长度需为 2-32 位' },
+                    ]}
                   >
-                    <Input placeholder="请输入用户名" size="large" />
+                    <Input placeholder="请输入用户名" size="large" maxLength={32} />
                   </Form.Item>
                   <Form.Item
                     label="密码"
                     name="password"
-                    rules={[{ required: true, message: '请输入密码' }]}
+                    rules={[
+                      { required: true, whitespace: true, message: '请输入密码' },
+                      { min: 6, max: 50, message: '密码长度需为 6-50 位' },
+                    ]}
                   >
-                    <Input.Password placeholder="请输入密码" size="large" />
+                    <Input.Password placeholder="请输入密码" size="large" maxLength={50} />
                   </Form.Item>
                   <Button type="primary" block size="large" onClick={() => void handleLogin()} style={{ marginTop: 8 }}>
                     登录
@@ -81,16 +87,21 @@ export function AuthPage() {
               key: 'register',
               label: '注册',
               children: (
-                <Form layout="vertical" form={registerForm} style={{ marginTop: 16 }}>
+                <Form
+                  layout="vertical"
+                  form={registerForm}
+                  style={{ marginTop: 16 }}
+                  initialValues={{ role: 'STUDENT' }}
+                >
                   <Form.Item
                     label="用户名"
                     name="username"
                     rules={[
-                      { required: true, message: '请输入用户名' },
+                      { required: true, whitespace: true, message: '请输入用户名' },
                       { min: 2, max: 32, message: '用户名长度需为 2-32 位' },
                     ]}
                   >
-                    <Input placeholder="例如：zhangsan" size="large" />
+                    <Input placeholder="例如：zhangsan" size="large" maxLength={32} showCount />
                   </Form.Item>
                   <Form.Item
                     label="邮箱"
@@ -106,21 +117,34 @@ export function AuthPage() {
                     label="昵称"
                     name="nickname"
                     rules={[
-                      { required: true, message: '请输入昵称' },
+                      { required: true, whitespace: true, message: '请输入昵称' },
                       { min: 1, max: 50, message: '昵称长度需为 1-50 位' },
                     ]}
                   >
-                    <Input placeholder="例如：张三" size="large" />
+                    <Input placeholder="例如：张三" size="large" maxLength={50} showCount />
+                  </Form.Item>
+                  <Form.Item
+                    label="角色"
+                    name="role"
+                    rules={[{ required: true, message: '请选择角色' }]}
+                  >
+                    <Select
+                      size="large"
+                      options={[
+                        { value: 'STUDENT', label: '学生' },
+                        { value: 'TEACHER', label: '老师' },
+                      ]}
+                    />
                   </Form.Item>
                   <Form.Item
                     label="密码"
                     name="password"
                     rules={[
-                      { required: true, message: '请输入密码' },
+                      { required: true, whitespace: true, message: '请输入密码' },
                       { min: 6, max: 50, message: '密码长度需为 6-50 位' },
                     ]}
                   >
-                    <Input.Password placeholder="请输入密码" size="large" />
+                    <Input.Password placeholder="请输入密码" size="large" maxLength={50} />
                   </Form.Item>
                   <Button type="primary" block size="large" onClick={() => void handleRegister()} style={{ marginTop: 8 }}>
                     注册

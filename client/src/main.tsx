@@ -12,29 +12,45 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       theme={{
         algorithm: theme.defaultAlgorithm,
         token: {
-          colorPrimary: '#4f46e5', // 现代感的靛蓝色
-          borderRadius: 12,
-          fontFamily: 'Inter, system-ui, sans-serif',
+          colorPrimary: '#1f883d',
+          colorInfo: '#57606a',
+          colorLink: '#24292f',
+          colorLinkHover: '#1f2328',
+          colorLinkActive: '#1f2328',
+          colorSuccess: '#1f883d',
+          colorWarning: '#9a6700',
+          colorError: '#cf222e',
+          borderRadius: 8,
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
           colorBgContainer: '#ffffff',
-          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+          colorBgElevated: '#ffffff',
+          colorText: '#1f2328',
+          colorTextSecondary: '#656d76',
+          colorBorder: '#d0d7de',
+          boxShadow: '0 8px 24px rgba(140,149,159,0.2)',
         },
         components: {
           Card: {
-            boxShadowTertiary: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
-            borderRadiusLG: 16,
+            borderRadiusLG: 8,
           },
           Button: {
             borderRadius: 8,
-            controlHeight: 38,
+            controlHeight: 36,
             fontWeight: 500,
           },
           Input: {
-            controlHeight: 38,
+            controlHeight: 36,
             borderRadius: 8,
           },
           Select: {
-            controlHeight: 38,
+            controlHeight: 36,
             borderRadius: 8,
+          },
+          Modal: {
+            borderRadiusLG: 8,
+          },
+          Progress: {
+            defaultColor: '#57606a',
           },
         },
       }}

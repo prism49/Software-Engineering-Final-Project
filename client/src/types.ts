@@ -54,6 +54,7 @@ export interface ProjectSummary {
 export interface MilestoneSummary {
   milestone_id: number;
   title: string;
+  description: string | null;
   status: MilestoneStatus;
   due_date: string;
 }
@@ -113,6 +114,7 @@ export interface LoginPayload {
 export interface RegisterPayload extends LoginPayload {
   email: string;
   nickname: string;
+  role?: UserRole;
 }
 
 export interface CreateProjectPayload {
