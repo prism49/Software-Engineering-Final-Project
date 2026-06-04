@@ -75,9 +75,11 @@ export function UserHomePage() {
     const loadPageData = async () => {
       setLoading(true);
       try {
-        const [allProjects, myTagData] = await Promise.all([
+        const [allProjects, tagData] = await Promise.all([
           api.getProjects(),
-          isOwnProfile ? api.getMyTags() : Promise.resolve([] as SkillTag[]),
+          isOwnProfile
+            ? api.getMyTags()
+            : api.getUserTags(targetUserId).catch(() => [] as SkillTag[]),
         ]);
 
         const relatedProjects = allProjects.filter(
@@ -90,7 +92,7 @@ export function UserHomePage() {
 
         const leaderProject = allProjects.find((project) => project.leader.user_id === targetUserId);
 
-        const nextProfile: ProfileSummary | null = isOwnProfile && user
+        const currentProfile: ProfileSummary | null = isOwnProfile && user
           ? {
               user_id: user.user_id,
               username: user.username,
@@ -112,9 +114,33 @@ export function UserHomePage() {
                 }
               : null;
 
+        const shouldFetchDatabaseProfile =
+          !isOwnProfile &&
+          currentProfile &&
+          (!currentProfile.username ||
+            !currentProfile.email ||
+            !currentProfile.role ||
+            !currentProfile.created_at ||
+            currentProfile.nickname === `用户 ${targetUserId}`);
+
+        const databaseProfile = shouldFetchDatabaseProfile
+          ? await api.getUserProfile(targetUserId).catch(() => null)
+          : null;
+
+        const nextProfile: ProfileSummary | null = databaseProfile
+          ? {
+              user_id: databaseProfile.user_id,
+              username: databaseProfile.username,
+              nickname: databaseProfile.nickname,
+              email: databaseProfile.email,
+              role: databaseProfile.role,
+              created_at: databaseProfile.created_at,
+            }
+          : currentProfile;
+
         setProfile(nextProfile);
         setRepositories(relatedProjects);
-        setSkillTags(myTagData);
+        setSkillTags(tagData);
       } finally {
         setLoading(false);
       }
@@ -233,18 +259,16 @@ export function UserHomePage() {
             <div className="profile-skill-section">
               <Typography.Text strong>技能标签</Typography.Text>
               <div className="profile-skill-tags">
-                {isOwnProfile ? (
-                  skillTags.length > 0 ? (
-                    skillTags.map((tag) => (
-                      <Tag key={tag.tag_id} bordered={false} className="profile-skill-tag">
-                        {tag.name}
-                      </Tag>
-                    ))
-                  ) : (
-                    <Typography.Text type="secondary">暂未设置技能标签</Typography.Text>
-                  )
+                {skillTags.length > 0 ? (
+                  skillTags.map((tag) => (
+                    <Tag key={tag.tag_id} bordered={false} className="profile-skill-tag">
+                      {tag.name}
+                    </Tag>
+                  ))
                 ) : (
-                  <Typography.Text type="secondary">暂未公开技能标签</Typography.Text>
+                  <Typography.Text type="secondary">
+                    {isOwnProfile ? '暂未设置技能标签' : '该用户暂未设置技能标签'}
+                  </Typography.Text>
                 )}
               </div>
             </div>

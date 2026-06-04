@@ -8,6 +8,7 @@ import type {
   CreateTaskPayload,
   LoginPayload,
   MessageResponse,
+  PublicUserSummary,
   ProjectDetail,
   ProjectReview,
   ProjectStatus,
@@ -35,6 +36,16 @@ export const api = {
   },
   getCurrentUser: async () => {
     const { data } = await http.get<User>('/auth/me');
+    return data;
+  },
+  getUsers: async (keyword?: string) => {
+    const { data } = await http.get<PublicUserSummary[]>('/users', {
+      params: keyword ? { keyword } : undefined,
+    });
+    return data;
+  },
+  getUserProfile: async (userId: number) => {
+    const { data } = await http.get<User>(`/users/${userId}`);
     return data;
   },
   getProjects: async (params?: { status?: ProjectStatus; tag?: string }) => {
@@ -76,6 +87,10 @@ export const api = {
   },
   getMyTags: async () => {
     const { data } = await http.get<Tag[]>('/users/me/tags');
+    return data;
+  },
+  getUserTags: async (userId: number) => {
+    const { data } = await http.get<Tag[]>(`/users/${userId}/tags`);
     return data;
   },
   updateMyTags: async (tag_ids: number[]) => {

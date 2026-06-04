@@ -19,6 +19,13 @@ export interface AuthResponse {
   user: User;
 }
 
+export interface PublicUserSummary {
+  user_id: number;
+  username: string;
+  nickname: string;
+  role: UserRole;
+}
+
 export interface Tag {
   tag_id: number;
   name: string;

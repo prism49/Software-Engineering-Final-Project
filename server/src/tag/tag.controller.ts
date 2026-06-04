@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Body, UseGuards, Req } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Put, Body, UseGuards, Req, Param } from '@nestjs/common';
 import { TagService } from './tag.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { IsArray, IsInt } from 'class-validator';
@@ -29,6 +29,17 @@ export class TagController {
   @Get('users/me/tags')
   findUserTags(@Req() req: AuthenticatedRequest) {
     return this.tagService.findUserTags(req.user.userId);
+  }
+
+  /** GET /api/users/:id/tags */
+  @Get('users/:id/tags')
+  findPublicUserTags(@Param('id') id: string) {
+    const numericId = Number(id);
+    if (!Number.isInteger(numericId) || numericId <= 0) {
+      throw new BadRequestException('用户编号无效');
+    }
+
+    return this.tagService.findUserTags(numericId);
   }
 
   /** PUT /api/users/me/tags */

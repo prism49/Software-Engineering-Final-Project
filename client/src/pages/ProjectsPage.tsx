@@ -24,7 +24,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { api } from '../api/services';
 import { useAuth } from '../store/auth';
-import type { ProjectStatus, ProjectSummary, Tag as TagItem } from '../types';
+import type { ProjectStatus, ProjectSummary, PublicUserSummary, Tag as TagItem } from '../types';
 import { formatDate, projectStatusLabel } from '../utils/format';
 
 const PROJECTS_CHANGED_EVENT = 'teamsync:projects-changed';
@@ -52,6 +52,8 @@ export function ProjectsPage({ mode = 'all' }: ProjectsPageProps) {
   const [applyingProject, setApplyingProject] = useState<ProjectSummary | null>(null);
   const [filters, setFilters] = useState<{ status?: ProjectStatus; tag?: string }>({});
   const [searchKeyword, setSearchKeyword] = useState('');
+  const [searchMode, setSearchMode] = useState<'project' | 'user'>('project');
+  const [userSearchResults, setUserSearchResults] = useState<PublicUserSummary[]>([]);
   const [createForm] = Form.useForm();
   const [applyForm] = Form.useForm<{ apply_reason?: string }>();
 
@@ -149,8 +151,8 @@ export function ProjectsPage({ mode = 'all' }: ProjectsPageProps) {
     navigate('/projects', { replace: true });
   }, [isAuthenticated, location.search, messageApi, mode, navigate]);
 
-  const visibleProjects = useMemo(() => {
-    const scopedProjects =
+  const scopedProjects = useMemo(
+    () =>
       mode === 'mine'
         ? !user
           ? []
@@ -159,8 +161,11 @@ export function ProjectsPage({ mode = 'all' }: ProjectsPageProps) {
                 project.leader.user_id === user.user_id ||
                 project.members.some((member) => member.user_id === user.user_id && member.status !== 'REJECTED'),
             )
-        : projects;
+        : projects,
+    [mode, projects, user],
+  );
 
+  const visibleProjects = useMemo(() => {
     const normalizedKeyword = searchKeyword.trim().toLowerCase();
     if (!normalizedKeyword) {
       return scopedProjects;
@@ -179,7 +184,29 @@ export function ProjectsPage({ mode = 'all' }: ProjectsPageProps) {
 
       return searchableText.includes(normalizedKeyword);
     });
-  }, [mode, projects, searchKeyword, user]);
+  }, [scopedProjects, searchKeyword]);
+
+  useEffect(() => {
+    if (mode !== 'all' || searchMode !== 'user') {
+      setUserSearchResults([]);
+      return;
+    }
+
+    const keyword = searchKeyword.trim();
+    if (!keyword) {
+      setUserSearchResults([]);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      void api
+        .getUsers(keyword)
+        .then((users) => setUserSearchResults(users))
+        .catch(() => setUserSearchResults([]));
+    }, 250);
+
+    return () => window.clearTimeout(timer);
+  }, [mode, searchKeyword, searchMode]);
 
   const requireLogin = useCallback(() => {
     if (!isAuthenticated) {
@@ -266,9 +293,20 @@ export function ProjectsPage({ mode = 'all' }: ProjectsPageProps) {
               <Button onClick={() => setFilters({})}>重置筛选</Button>
             </Space>
             <Space wrap size="middle">
+              {mode === 'all' && (
+                <Select<'project' | 'user'>
+                  value={searchMode}
+                  onChange={setSearchMode}
+                  options={[
+                    { value: 'project', label: '项目' },
+                    { value: 'user', label: '用户' },
+                  ]}
+                  style={{ width: 110 }}
+                />
+              )}
               <Input.Search
                 allowClear
-                placeholder="搜索项目名称、描述、作者或标签"
+                placeholder={searchMode === 'user' ? '搜索昵称或用户名' : '搜索项目名称、描述、作者或标签'}
                 style={{ width: 320 }}
                 value={searchKeyword}
                 onChange={(event) => setSearchKeyword(event.target.value)}
@@ -298,6 +336,50 @@ export function ProjectsPage({ mode = 'all' }: ProjectsPageProps) {
             <div className="project-list-state">
               <Spin size="large" />
             </div>
+          ) : mode === 'all' && searchMode === 'user' ? (
+            searchKeyword.trim() ? (
+              userSearchResults.length > 0 ? (
+                <List
+                  className="project-rect-list"
+                  dataSource={userSearchResults}
+                  renderItem={(searchUser) => (
+                    <List.Item className="project-list-item" style={{ padding: '24px' }}>
+                      <List.Item.Meta
+                        avatar={<Avatar size={40} icon={<UserOutlined />} />}
+                        title={
+                          <Link
+                            to={getUserHomePath(searchUser.user_id)}
+                            className="project-user-link"
+                          >
+                            <Space size={8} className="project-user-link-inner">
+                              <span className="project-user-link-text">{searchUser.nickname}</span>
+                            </Space>
+                          </Link>
+                        }
+                        description={
+                          <Space direction="vertical" size={8} style={{ marginTop: 8 }}>
+                            <Typography.Text type="secondary">
+                              @{searchUser.username}
+                            </Typography.Text>
+                            <Tag bordered={false} style={{ width: 'fit-content', margin: 0 }}>
+                              {searchUser.role === 'TEACHER' ? '老师' : '学生'}
+                            </Tag>
+                          </Space>
+                        }
+                      />
+                    </List.Item>
+                  )}
+                />
+              ) : (
+                <div className="project-list-state">
+                  <Empty description="暂无符合条件的用户" />
+                </div>
+              )
+            ) : (
+              <div className="project-list-state">
+                <Empty description="请输入昵称或用户名搜索用户" />
+              </div>
+            )
           ) : visibleProjects.length === 0 ? (
             <div className="project-list-state">
               <Empty description={mode === 'mine' ? '当前没有可展示的项目' : '暂无符合条件的项目'} />
@@ -308,8 +390,6 @@ export function ProjectsPage({ mode = 'all' }: ProjectsPageProps) {
               dataSource={visibleProjects}
               itemLayout="vertical"
               renderItem={(project) => {
-                const isLeader = user?.user_id === project.leader.user_id;
-
                 return (
                   <List.Item
                     className="project-list-item"

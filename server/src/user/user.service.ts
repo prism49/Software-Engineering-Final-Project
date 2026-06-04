@@ -27,6 +27,39 @@ export class UserService {
     });
   }
 
+  async searchPublicProfiles(keyword?: string) {
+    const normalizedKeyword = keyword?.trim();
+
+    const users = await this.prisma.user.findMany({
+      where: {
+        is_deleted: false,
+        ...(normalizedKeyword
+          ? {
+              OR: [
+                { username: { contains: normalizedKeyword } },
+                { nickname: { contains: normalizedKeyword } },
+              ],
+            }
+          : {}),
+      },
+      select: {
+        user_id: true,
+        username: true,
+        nickname: true,
+        role: true,
+      },
+      orderBy: [{ nickname: 'asc' }, { username: 'asc' }],
+      take: 10,
+    });
+
+    return users.map((user) => ({
+      user_id: Number(user.user_id),
+      username: user.username,
+      nickname: user.nickname,
+      role: user.role,
+    }));
+  }
+
   /** 创建新用户 */
   async create(data: {
     username: string;
