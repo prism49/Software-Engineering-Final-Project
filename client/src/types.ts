@@ -56,6 +56,7 @@ export interface ProjectSummary {
   tags: Tag[];
   task_count: number;
   created_at: string;
+  is_overdue?: boolean;
 }
 
 export interface MilestoneSummary {
@@ -64,6 +65,7 @@ export interface MilestoneSummary {
   description: string | null;
   status: MilestoneStatus;
   due_date: string;
+  is_overdue?: boolean;
 }
 
 export interface ProjectDetail {
@@ -79,6 +81,7 @@ export interface ProjectDetail {
   tags: Tag[];
   task_count: number;
   created_at: string;
+  is_overdue?: boolean;
 }
 
 export interface TaskPerson {
@@ -107,6 +110,7 @@ export interface TaskItem {
   assignee: TaskPerson | null;
   created_at: string;
   updated_at: string;
+  is_overdue?: boolean;
 }
 
 export interface MessageResponse {

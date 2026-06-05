@@ -401,8 +401,8 @@ export function ProjectsPage({ mode = 'all' }: ProjectsPageProps) {
                           <div className="project-display-title">
                             {renderProjectDisplayTitle(project)}
                           </div>
-                          <Tag color={projectStatusColor[project.status]} style={{ margin: 0 }}>
-                            {projectStatusLabel[project.status]}
+                          <Tag color={project.is_overdue ? 'error' : projectStatusColor[project.status]} style={{ margin: 0 }}>
+                            {project.is_overdue ? '已过期' : projectStatusLabel[project.status]}
                           </Tag>
                         </Space>
                       }

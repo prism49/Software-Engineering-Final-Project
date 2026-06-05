@@ -69,6 +69,8 @@ export class ProjectService {
       })),
       task_count: p._count.tasks,
       created_at: p.created_at,
+      is_overdue:
+        new Date(p.deadline) < new Date() && p.status !== 'CLOSED',
     }));
   }
 
@@ -121,6 +123,8 @@ export class ProjectService {
         description: m.description,
         status: m.status,
         due_date: m.due_date,
+        is_overdue:
+          new Date(m.due_date) < new Date() && m.status !== 'COMPLETED',
       })),
       tags: p.project_required_tags.map((t) => ({
         tag_id: Number(t.tag.tag_id),
@@ -128,6 +132,8 @@ export class ProjectService {
       })),
       task_count: p._count.tasks,
       created_at: p.created_at,
+      is_overdue:
+        new Date(p.deadline) < new Date() && p.status !== 'CLOSED',
     };
   }
 

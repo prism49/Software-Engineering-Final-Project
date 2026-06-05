@@ -72,6 +72,10 @@ export class TaskService {
         : null,
       created_at: t.created_at,
       updated_at: t.updated_at,
+      is_overdue:
+        t.due_date != null &&
+        new Date(t.due_date) < new Date() &&
+        t.status !== 'DONE',
     }));
   }
 
@@ -106,12 +110,21 @@ export class TaskService {
         : null,
       created_at: t.created_at,
       updated_at: t.updated_at,
+      is_overdue:
+        t.due_date != null &&
+        new Date(t.due_date) < new Date() &&
+        t.status !== 'DONE',
     };
   }
 
   /** 创建任务 */
   async create(projectId: number, userId: number, dto: CreateTaskDto) {
     await this.requireMember(BigInt(projectId), userId);
+
+    // 校验任务截止时间 <= 里程碑截止时间
+    if (dto.milestone_id && dto.due_date) {
+      await this.validateDueBeforeMilestone(dto.milestone_id, dto.due_date);
+    }
 
     const task = await this.prisma.task.create({
       data: {
@@ -155,6 +168,13 @@ export class TaskService {
     if (!task) throw new NotFoundException('任务不存在');
 
     const operator = await this.requireMember(BigInt(task.project_id), userId);
+
+    // 校验任务截止时间 <= 里程碑截止时间
+    const effectiveMilestoneId = dto.milestone_id ?? Number(task.milestone_id ?? 0);
+    const effectiveDueDate = dto.due_date ?? (task.due_date ? new Date(task.due_date).toISOString() : undefined);
+    if (effectiveMilestoneId && effectiveDueDate) {
+      await this.validateDueBeforeMilestone(effectiveMilestoneId, effectiveDueDate);
+    }
 
     // 状态变更时自动认领：TODO → DOING 且未传 assignee_id 则自动设为当前用户
     if (dto.status === 'DOING' && task.status === 'TODO' && dto.assignee_id === undefined) {
@@ -235,6 +255,20 @@ export class TaskService {
       if (Number(task.assignee_id) !== effectiveAssignee) {
         throw new ForbiddenException('只有任务执行人可提交审核');
       }
+    }
+  }
+
+  /** 校验任务截止时间不晚于里程碑截止时间 */
+  private async validateDueBeforeMilestone(milestoneId: number, dueDate: string) {
+    const milestone = await this.prisma.milestone.findFirst({
+      where: { milestone_id: BigInt(milestoneId), is_deleted: false },
+    });
+    if (!milestone) throw new NotFoundException('里程碑不存在');
+
+    if (new Date(dueDate) > new Date(milestone.due_date)) {
+      throw new BadRequestException(
+        `任务截止时间不能晚于里程碑"${milestone.title}"的截止时间（${new Date(milestone.due_date).toLocaleDateString('zh-CN')}）`,
+      );
     }
   }
 }

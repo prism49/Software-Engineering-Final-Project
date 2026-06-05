@@ -690,8 +690,10 @@ export function ProjectDetailPage() {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
-      render: (status: TaskItem['status']) => (
-        <Tag color={taskStatusColor[status]}>{taskStatusLabel[status]}</Tag>
+      render: (_status: TaskItem['status'], record: TaskItem) => (
+        <Tag color={record.is_overdue ? 'error' : taskStatusColor[record.status]}>
+          {record.is_overdue ? '已过期' : taskStatusLabel[record.status]}
+        </Tag>
       ),
     },
     {
@@ -912,10 +914,10 @@ export function ProjectDetailPage() {
                 })()}
               </Typography.Title>
               <Tag
-                color={projectStatusColor[project.status]}
+                color={project.is_overdue ? 'error' : projectStatusColor[project.status]}
                 style={{ margin: 0, fontSize: 14, padding: '4px 12px' }}
               >
-                {projectStatusLabel[project.status]}
+                {project.is_overdue ? '已过期' : projectStatusLabel[project.status]}
               </Tag>
             </Space>
             <Typography.Paragraph
@@ -1088,11 +1090,15 @@ export function ProjectDetailPage() {
                             })}
                             <Tag
                               color={
-                                milestone.status === 'COMPLETED' ? 'success' : 'processing'
+                                milestone.is_overdue
+                                  ? 'error'
+                                  : milestone.status === 'COMPLETED'
+                                    ? 'success'
+                                    : 'processing'
                               }
                               style={{ margin: 0 }}
                             >
-                              {milestoneStatusLabel[milestone.status]}
+                              {milestone.is_overdue ? '已过期' : milestoneStatusLabel[milestone.status]}
                             </Tag>
                           </Space>
                         }
@@ -1522,12 +1528,14 @@ export function ProjectDetailPage() {
                                         </Typography.Text>
                                         <Tag
                                           color={
-                                            milestone.status === 'COMPLETED'
-                                              ? 'success'
-                                              : 'processing'
+                                            milestone.is_overdue
+                                              ? 'error'
+                                              : milestone.status === 'COMPLETED'
+                                                ? 'success'
+                                                : 'processing'
                                           }
                                         >
-                                          {milestoneStatusLabel[milestone.status]}
+                                          {milestone.is_overdue ? '已过期' : milestoneStatusLabel[milestone.status]}
                                         </Tag>
                                       </Space>
                                     }
