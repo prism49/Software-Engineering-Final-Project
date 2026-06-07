@@ -1,8 +1,8 @@
 /**
- * PrismaService Mock 工厂
+ * PrismaService Mock 
  *
  * 为所有测试提供统一的 Prisma 模拟。
- * 每个测试可以按需覆写具体方法的实现。
+ * 每个测试按需覆写具体方法的实现。
  */
 export const createMockPrisma = () => ({
   user: {
@@ -55,6 +55,6 @@ export const createMockPrisma = () => ({
   tag: {
     findMany: jest.fn(),
   },
-  // 事务支持（如有需要）
+  // 事务支持
   $transaction: jest.fn((fn: any) => fn(createMockPrisma())),
 });
